@@ -1,7 +1,7 @@
 # AMQ 7.x Master / Slave Replicated Cluster on EC2
 
 
-This project demonstrates how to setup a three-node AMQ 7 Master / Slave cluster (using shared-nothing replication) within a single Amazon EC2 Availability Zone (AZ).  Please note that although this architecture is limited to a single AZ only.  Although it *may* work cross-AZ, it is not recommended nor supported.
+This project demonstrates how to setup a three-node AMQ 7 Master / Slave cluster (using shared-nothing replication) within a single Amazon EC2 Availability Zone (AZ).  Please note that although this architecture *may* work cross-AZ, it is not recommended nor supported.
 
 ![Master Slave Architecture](images/MasterSlaveReplicatedEC2.png)
 

@@ -16,69 +16,71 @@ The following product / OS prerequisites exist:
 
 ## Procedure
 
-### Test AMQ 7 Master / Slave Cluster
+### Setup EC2
 
-To get things started, we need to setup a master / slave broker cluster and ensure it works correctly with shared-nothing replication.
+To get things started, we need to setup three separate EC2 instances.
 
-1. Follow the [instructions](https://github.com/jbossdemocentral/amq-ha-replicated-demo) for setting-up an AMQ 7 shared-nothing replication master / slave cluster.  You will need to increment the product version to `7.0.3` in the `init.sh` script contained in the project.
-2. Update the Acceptor section of `/amq-broker-7.0.3/instances/replicatedMaster/etc/broker.xml` so we're listening on the correct network adapter:
+1. Provision three RHEL 7.3, c4.xlarge instances.
+2. Associate three separate Elastic IP's to each instance.  Name them Master, Slave One, and Slave Two.
 
-```
+![EC2 Instances](images/ec2Instance.png)
 
-      <acceptors>
+3. As part of the setup process, be sure to create a Security Group that opens up inbound ports 61616, 22, 80, and 8161.  All outbound traffic should be left open.
 
-         <!-- Acceptor for every supported protocol -->
-         <acceptor name="artemis">tcp://0.0.0.0:61616?tcpSendBufferSize=1048576;tcpReceiveBufferSize=1048576;protocols=CORE,AMQP,STOMP,HORNETQ,MQTT,OPENWIRE;useEpoll=true;amqpCredits=1000;amqpLowCredits=300</acceptor>
+![Security Group](images/securityGroup.png)
 
-         <!-- AMQP Acceptor.  Listens on default AMQP port for AMQP traffic.-->
-         <acceptor name="amqp">tcp://0.0.0.0:5673?tcpSendBufferSize=1048576;tcpReceiveBufferSize=1048576;protocols=AMQP;useEpoll=true;amqpCredits=1000;amqpMinCredits=300</acceptor>
-
-         <!-- STOMP Acceptor. -->
-         <acceptor name="stomp">tcp://0.0.0.0:61613?tcpSendBufferSize=1048576;tcpReceiveBufferSize=1048576;protocols=STOMP;useEpoll=true</acceptor>
-
-         <!-- HornetQ Compatibility Acceptor.  Enables HornetQ Core and STOMP for legacy HornetQ clients. -->
-         <acceptor name="hornetq">tcp://0.0.0.0:5445?protocols=HORNETQ,STOMP;useEpoll=true</acceptor>
-
-         <!-- MQTT Acceptor -->
-         <acceptor name="mqtt">tcp://0.0.0.0:1883?tcpSendBufferSize=1048576;tcpReceiveBufferSize=1048576;protocols=MQTT;useEpoll=true</acceptor>
-
-      </acceptors>
-```
-3. Do the same for `/amq-broker-7.0.3/instances/replicatedSlave/etc/broker.xml`:
+4. Startup each instance, and secure copy the AMQ 7 binary to each machine:
 
 ```
-
-      <acceptors>
-
-         <!-- useEpoll means: it will use Netty epoll if you are on a system (Linux) that supports it -->
-         <!-- amqpCredits: The number of credits sent to AMQP producers -->
-         <!-- amqpLowCredits: The server will send the # credits specified at amqpCredits at this low mark -->
-
-         <!-- Acceptor for every supported protocol -->
-         <acceptor name="artemis">tcp://0.0.0.0:61716?tcpSendBufferSize=1048576;tcpReceiveBufferSize=1048576;protocols=CORE,AMQP,STOMP,HORNETQ,MQTT,OPENWIRE;useEpoll=true;amqpCredits=1000;amqpLowCredits=300</acceptor>
-
-         <!-- AMQP Acceptor.  Listens on default AMQP port for AMQP traffic.-->
-         <acceptor name="amqp">tcp://0.0.0.0:5772?tcpSendBufferSize=1048576;tcpReceiveBufferSize=1048576;protocols=AMQP;useEpoll=true;amqpCredits=1000;amqpMinCredits=300</acceptor>
-
-         <!-- STOMP Acceptor. -->
-         <acceptor name="stomp">tcp://0.0.0.0:61713?tcpSendBufferSize=1048576;tcpReceiveBufferSize=1048576;protocols=STOMP;useEpoll=true</acceptor>
-
-         <!-- HornetQ Compatibility Acceptor.  Enables HornetQ Core and STOMP for legacy HornetQ clients. -->
-         <acceptor name="hornetq">tcp://0.0.0.0:5545?protocols=HORNETQ,STOMP;useEpoll=true</acceptor>
-
-         <!-- MQTT Acceptor -->
-         <acceptor name="mqtt">tcp://0.0.0.0:1983?tcpSendBufferSize=1048576;tcpReceiveBufferSize=1048576;protocols=MQTT;useEpoll=true</acceptor>
-
-      </acceptors>
+scp -i ~/Downloads/ec2-ssh.pem ~/Downloads/amq-broker-7.3.0-bin.zip ec2-user@XX.XX.XX.XX.compute-1.amazonaws.com:
 ```
-4. Update `/amq-broker-7.0.3/instances/replicatedMaster/etc/bootstrap.xml` and `/amq-broker-7.0.3/instances/replicatedMaster/etc/bootstrap.xml` so that the web bind address is listening on the correct host e.g. `<web bind="http://0.0.0.0:XXXX" path="web">`
-5. Test your setup as described in the instructions, ensuring that master / slave failover occurs as expected.  Ensure you can access both HawtIO consoles (on port 8161 + 8261).
-6. For an additional test, try sending an AMQP message to either port 5673 (master) or 5772 (slave) depending on which broker is active.  You can use the following command for this:
-```
-qsend amqp://127.0.0.1:5673/haQueue -m Abc
-```
-If you browse for the message via HawtIO, you'll notice that Durable=false.  This means the message will disappear during failover and won't be replicated.  The test in step 5. was Durable=true, therefore the message should have been replicated
 
+5. For each instance, unzip the binary and run the following command from the `amq-broker-7.3.0-bin` directory:
+
+```
+./bin/artemis run brokers/master
+```
+
+Set the username and password to `admin`, and set Anonymous Access to `Y`.  Do the same for Slave One and Slave Two machines, except change the artemis setup command to:
+
+```
+./bin/artemis run brokers/slaveX
+```
+
+replacing `X` with your instance name.
+
+
+6. For each instance, open the `amq-broker-7.3.0-bin/brokers/<instance name>/etc/bootstrap.xml` file and update the bind address to listen on all network addresses (`0.0.0.0`):
+
+```
+<!-- The web server is only bound to localhost by default -->
+<web bind="http://0.0.0.0:8161" path="web">
+    <app url="redhat-branding" war="redhat-branding.war"/>
+    <app url="artemis-plugin" war="artemis-plugin.war"/>
+    <app url="console" war="console.war"/>
+</web>
+```
+
+7. For each instance, open the `amq-broker-7.3.0-bin/brokers/<instance name>/etc/jolokia-access.xml` file and update the CORS allow origin section to accept remote addresses:
+
+```
+        <allow-origin>*://*</allow-origin>
+```
+8. Copy and replace the `amq-broker-7.3.0-bin/brokers/<instance name>/etc/broker.xml` file with the corresponding `broker.xml` for each instance.  Make sure you replace the `m.m.m.m` with the Master Elastic IP, `s1.s1.s1.s1` with the Slave One Elastic IP, and `s2.s2.s2.s2` with the Slave Two Elastic IP in the `<connectors>` section:
+
+```
+<!-- Connectors -->
+
+<connectors>
+   <connector name="netty-connector">tcp://m.m.m.m:61616</connector>
+   <!-- connector to the server1 (slave1) -->
+   <connector name="server1-connector">tcp://s1.s1.s1.s1:61616</connector>
+   <!-- connector to the server2 (slave2) -->
+   <connector name="server2-connector">tcp://s2.s2.s2.s2:61616</connector>
+</connectors>
+```
+
+9. Startup the Master instance first (`./amq-broker-7.3.0-bin/brokers/<instance name>/bin/artemis run`).  Wait for it to startup, then startup Slave One and Slave Two instances in the same manner.
 
 ### Test LDAP connectivity with your broker cluster
 

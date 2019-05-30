@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<configuration xmlns="urn:activemq" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:activemq /schema/artemis-configuration.xsd">
+   <core xmlns="urn:activemq:core">
+
+      <bindings-directory>./data/bindings</bindings-directory>
+
+      <journal-directory>./data/journal</journal-directory>
+
+      <large-messages-directory>./data/largemessages</large-messages-directory>
+
+      <paging-directory>./data/paging</paging-directory>
+
+      <!-- Enable Master / Slave (Live / Backup) HA Setup -->
+      <ha-policy>
+         <replication>
+            <master>
+          		<check-for-live-server>true</check-for-live-server>
+          		<initial-replication-sync-timeout>90000</initial-replication-sync-timeout>
+          		<group-name>ha-replicated-group-3</group-name>
+            </master>
+         </replication>
+      </ha-policy>
+
+      <!-- Connectors -->
+      <connectors>
+	       <!-- connector to master3, group3, server3 -->
+         <connector name="netty-connector">tcp://serv3.serv3.serv3.serv3:61616</connector>
+	        <!-- connector to the slave3, group3, server2 -->
+         <connector name="s3-connector">tcp://serv2.serv2.serv2.serv2:61617</connector>
+
+         <!-- connector to the master1, group1, server1 -->
+         <connector name="m1-connector">tcp://serv1.serv1.serv1.serv1:61616</connector>
+         <!-- connector to the slave1, group1, server3 -->
+         <connector name="s1-connector">tcp://serv3.serv3.serv3.serv3:61617</connector>
+
+	 <!-- connector to the master2, group2, server2 -->
+         <connector name="m2-connector">tcp://serv2.serv2.serv2.serv2:61616</connector>
+         <!-- connector to the slave2, group2, server1 -->
+         <connector name="s2-connector">tcp://serv1.serv1.serv1.serv1:61617</connector>
+
+      </connectors>
+      <!-- Acceptors -->
+      <acceptors>
+         <acceptor name="netty-acceptor">tcp://0.0.0.0:61616</acceptor>
+      </acceptors>
+
+      <cluster-connections>
+         <cluster-connection name="my-cluster">
+            <connector-ref>netty-connector</connector-ref>
+            <retry-interval>500</retry-interval>
+            <use-duplicate-detection>true</use-duplicate-detection>
+            <message-load-balancing>STRICT</message-load-balancing>
+            <max-hops>1</max-hops>
+            <static-connectors>
+               <connector-ref>s3-connector</connector-ref>
+               <connector-ref>m1-connector</connector-ref>
+               <connector-ref>s1-connector</connector-ref>
+               <connector-ref>m2-connector</connector-ref>
+               <connector-ref>s2-connector</connector-ref>
+            </static-connectors>
+         </cluster-connection>
+      </cluster-connections>
+
+     <!-- Other config -->
+      <security-settings>
+         <security-setting match="#">
+            <permission type="createNonDurableQueue" roles="amq"/>
+            <permission type="deleteNonDurableQueue" roles="amq"/>
+            <permission type="createDurableQueue" roles="amq"/>
+            <permission type="deleteDurableQueue" roles="amq"/>
+            <permission type="createAddress" roles="amq"/>
+            <permission type="deleteAddress" roles="amq"/>
+            <permission type="consume" roles="amq"/>
+            <permission type="browse" roles="amq"/>
+            <permission type="send" roles="amq"/>
+            <!-- we need this otherwise ./artemis data imp wouldn't work -->
+            <permission type="manage" roles="amq"/>
+         </security-setting>
+      </security-settings>
+
+      <address-settings>
+         <!-- if you define auto-create on certain queues, management has to be auto-create -->
+         <address-setting match="activemq.management#">
+            <dead-letter-address>DLQ</dead-letter-address>
+            <expiry-address>ExpiryQueue</expiry-address>
+            <redelivery-delay>0</redelivery-delay>
+            <!-- with -1 only the global-max-size is in use for limiting -->
+            <max-size-bytes>-1</max-size-bytes>
+            <message-counter-history-day-limit>10</message-counter-history-day-limit>
+            <address-full-policy>PAGE</address-full-policy>
+            <auto-create-queues>true</auto-create-queues>
+            <auto-create-addresses>true</auto-create-addresses>
+            <auto-create-jms-queues>true</auto-create-jms-queues>
+            <auto-create-jms-topics>true</auto-create-jms-topics>
+         </address-setting>
+         <!--default for catch all-->
+         <address-setting match="#">
+            <dead-letter-address>DLQ</dead-letter-address>
+            <expiry-address>ExpiryQueue</expiry-address>
+            <redelivery-delay>0</redelivery-delay>
+            <!-- with -1 only the global-max-size is in use for limiting -->
+            <max-size-bytes>-1</max-size-bytes>
+            <message-counter-history-day-limit>10</message-counter-history-day-limit>
+            <address-full-policy>PAGE</address-full-policy>
+            <auto-create-queues>true</auto-create-queues>
+            <auto-create-addresses>true</auto-create-addresses>
+            <auto-create-jms-queues>true</auto-create-jms-queues>
+            <auto-create-jms-topics>true</auto-create-jms-topics>
+         </address-setting>
+      </address-settings>
+
+      <addresses>
+         <address name="DLQ">
+            <anycast>
+               <queue name="DLQ" />
+            </anycast>
+         </address>
+         <address name="ExpiryQueue">
+            <anycast>
+               <queue name="ExpiryQueue" />
+            </anycast>
+         </address>
+	 <address name="TestQueue-0">
+            <anycast>
+               <queue name="TestQueue-0" />
+            </anycast>
+         </address>
+         <address name="TestQueue-1">
+            <anycast>
+               <queue name="TestQueue-1" />
+            </anycast>
+         </address>
+         <address name="TestQueue-2">
+            <anycast>
+               <queue name="TestQueue-2" />
+            </anycast>
+         </address>
+         <address name="TestQueue-3">
+            <anycast>
+               <queue name="TestQueue-3" />
+            </anycast>
+         </address>
+         <address name="TestQueue-4">
+            <anycast>
+               <queue name="TestQueue-4" />
+            </anycast>
+         </address>
+         <address name="TestQueue-5">
+            <anycast>
+               <queue name="TestQueue-5" />
+            </anycast>
+         </address>
+         <address name="TestQueue-6">
+            <anycast>
+               <queue name="TestQueue-6" />
+            </anycast>
+         </address>
+         <address name="TestQueue-7">
+            <anycast>
+               <queue name="TestQueue-7" />
+            </anycast>
+         </address>
+         <address name="TestQueue-8">
+            <anycast>
+               <queue name="TestQueue-8" />
+            </anycast>
+         </address>
+         <address name="TestQueue-9">
+            <anycast>
+               <queue name="TestQueue-9" />
+            </anycast>
+         </address>
+         <address name="TEST">
+            <anycast>
+               <queue name="TEST" />
+            </anycast>
+         </address>
+      </addresses>
+
+   </core>
+</configuration>

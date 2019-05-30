@@ -1,22 +1,4 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!--
-Licensed to the Apache Software Foundation (ASF) under one
-or more contributor license agreements.  See the NOTICE file
-distributed with this work for additional information
-regarding copyright ownership.  The ASF licenses this file
-to you under the Apache License, Version 2.0 (the
-"License"); you may not use this file except in compliance
-with the License.  You may obtain a copy of the License at
-
-  http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing,
-software distributed under the License is distributed on an
-"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-KIND, either express or implied.  See the License for the
-specific language governing permissions and limitations
-under the License.
--->
 <configuration xmlns="urn:activemq" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:activemq /schema/artemis-configuration.xsd">
    <core xmlns="urn:activemq:core">
 
@@ -34,18 +16,26 @@ under the License.
             <master>
           		<check-for-live-server>true</check-for-live-server>
           		<initial-replication-sync-timeout>90000</initial-replication-sync-timeout>
-          		<group-name>ha-replicated-group</group-name>
+          		<group-name>ha-replicated-group-1</group-name>
             </master>
          </replication>
       </ha-policy>
 
-      <!-- Connectors -->
       <connectors>
-         <connector name="netty-connector">tcp://m.m.m.m:61616</connector>
-         <!-- connector to the server1 (slave1) -->
-         <connector name="server1-connector">tcp://s1.s1.s1.s1:61616</connector>
-         <!-- connector to the server2 (slave2) -->
-         <connector name="server2-connector">tcp://s2.s2.s2.s2:61616</connector>
+	       <!-- connector to master1, group1, server1 -->
+          <connector name="netty-connector">tcp://serv1.serv1.serv1.serv1:61616</connector>
+	        <!-- connector to the slave1, group1, server3 -->
+         <connector name="s1-connector">tcp://serv3.serv3.serv3.serv3:61617</connector>
+
+	        <!-- connector to the master2, group2, server2 -->
+          <connector name="m2-connector">tcp://serv2.serv2.serv2.serv2:61616</connector>
+          <!-- connector to the slave2, group2, server1 -->
+          <connector name="s2-connector">tcp://serv1.serv1.serv1.serv1:61617</connector>
+
+	         <!-- connector to the master3, group3, server3 -->
+           <connector name="m3-connector">tcp://serv3.serv3.serv3.serv3:61616</connector>
+           <!-- connector to the slave3, group3, server2 -->
+           <connector name="s3-connector">tcp://serv2.serv2.serv2.serv2:61617</connector>
       </connectors>
 
       <!-- Acceptors -->
@@ -61,8 +51,11 @@ under the License.
             <message-load-balancing>STRICT</message-load-balancing>
             <max-hops>1</max-hops>
             <static-connectors>
-               <connector-ref>server1-connector</connector-ref>
-               <connector-ref>server2-connector</connector-ref>
+               <connector-ref>s1-connector</connector-ref>
+               <connector-ref>m2-connector</connector-ref>
+               <connector-ref>s2-connector</connector-ref>
+               <connector-ref>m3-connector</connector-ref>
+               <connector-ref>s3-connector</connector-ref>
             </static-connectors>
          </cluster-connection>
       </cluster-connections>
@@ -126,9 +119,61 @@ under the License.
                <queue name="ExpiryQueue" />
             </anycast>
          </address>
-
+	 <address name="TestQueue-0">
+            <anycast>
+               <queue name="TestQueue-0" />
+            </anycast>
+         </address>
+         <address name="TestQueue-1">
+            <anycast>
+               <queue name="TestQueue-1" />
+            </anycast>
+         </address>
+         <address name="TestQueue-2">
+            <anycast>
+               <queue name="TestQueue-2" />
+            </anycast>
+         </address>
+         <address name="TestQueue-3">
+            <anycast>
+               <queue name="TestQueue-3" />
+            </anycast>
+         </address>
+         <address name="TestQueue-4">
+            <anycast>
+               <queue name="TestQueue-4" />
+            </anycast>
+         </address>
+         <address name="TestQueue-5">
+            <anycast>
+               <queue name="TestQueue-5" />
+            </anycast>
+         </address>
+         <address name="TestQueue-6">
+            <anycast>
+               <queue name="TestQueue-6" />
+            </anycast>
+         </address>
+         <address name="TestQueue-7">
+            <anycast>
+               <queue name="TestQueue-7" />
+            </anycast>
+         </address>
+         <address name="TestQueue-8">
+            <anycast>
+               <queue name="TestQueue-8" />
+            </anycast>
+         </address>
+         <address name="TestQueue-9">
+            <anycast>
+               <queue name="TestQueue-9" />
+            </anycast>
+         </address>
+         <address name="TEST">
+            <anycast>
+               <queue name="TEST" />
+            </anycast>
+         </address>
       </addresses>
-
-
    </core>
 </configuration>

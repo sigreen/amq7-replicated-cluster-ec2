@@ -49,7 +49,7 @@
             <connector-ref>netty-connector</connector-ref>
             <retry-interval>500</retry-interval>
             <use-duplicate-detection>true</use-duplicate-detection>
-            <message-load-balancing>STRICT</message-load-balancing>
+            <message-load-balancing>ON_DEMAND</message-load-balancing>
             <max-hops>1</max-hops>
             <static-connectors>
                <connector-ref>s3-connector</connector-ref>
